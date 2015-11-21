@@ -1,0 +1,37 @@
+{
+  "name": "cfn-api-gateway-resource-tree",
+  "version": "0.1.0",
+  "description": "AWS CloudFormation Custom Lambda Resource | API Gateway Resource",
+  "main": "index.js",
+  "scripts": {
+    "cfn-lambda-deploy": "chmod +x ./node_modules/cfn-lambda/deploy.sh && ./node_modules/cfn-lambda/deploy.sh;"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/andrew-templeton/cfn-api-gateway-resource-tree.git"
+  },
+  "keywords": [
+    "aws",
+    "cloudformation",
+    "lambda",
+    "backed",
+    "custom",
+    "resource",
+    "api",
+    "gateway",
+    "resource",
+    "tree",
+    "rest",
+    "api",
+    "APIG"
+  ],
+  "author": "Andrew Templeton <andrw.tmplton@gmail.com> (https://github.com/andrew-templeton)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/andrew-templeton/cfn-api-gateway-resource-tree/issues"
+  },
+  "homepage": "https://github.com/andrew-templeton/cfn-api-gateway-resource-tree#readme",
+  "dependencies": {
+    "cfn-lambda": "0.6.1"
+  }
+}
