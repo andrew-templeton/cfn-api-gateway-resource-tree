@@ -13,12 +13,12 @@
     },
     "ResourceTreeCustomResourceLambdaName": {
       "Type": "String",
-      "Default": "cfn-api-gateway-resource-tree-0-1-0",
+      "Default": "cfn-api-gateway-resource-tree-0-2-0",
       "Description": "The name of the ApiGatewayResourceTree Lambda you deployed to test this stack."
     },
     "RestApiCustomResourceLambdaName": {
       "Type": "String",
-      "Default": "cfn-api-gateway-restapi-0-4-1",
+      "Default": "cfn-api-gateway-restapi-0-5-0",
       "Description": "The name of the ApiGatewayRestApi Lambda you deployed to test this stack."
     },
     "RestApiName": {
@@ -406,7 +406,7 @@
         "ResourceId": {
           "Fn::GetAtt": [
             "MyResourceTree",
-            "Absolute::/foo/{id}/baz"
+            "/foo/{id}/baz"
           ]
         },
         "RestApiId": {
@@ -457,7 +457,7 @@
         "ResourceId": {
           "Fn::GetAtt": [
             "MyResourceTree",
-            "Absolute::/foo/{id}/baz"
+            "/foo/{id}/baz"
           ]
         },
         "RestApiId": {
@@ -511,7 +511,7 @@
         "ResourceId": {
           "Fn::GetAtt": [
             "MyResourceTree",
-            "Absolute::/foo/{id}/baz"
+            "/foo/{id}/baz"
           ]
         },
         "RestApiId": {
@@ -735,7 +735,7 @@
         "ResourceId": {
           "Fn::GetAtt": [
             "MyResourceTree",
-            "Absolute::/foo/{id}/baz"
+            "/foo/{id}/baz"
           ]
         },
         "SelectionPattern": ".*",
@@ -945,7 +945,7 @@
             {
               "Fn::GetAtt": [
                 "MyResourceTree",
-                "Absolute::/foo/{id}/baz"
+                "/foo/{id}/baz"
               ]
             },
             "/methods/",

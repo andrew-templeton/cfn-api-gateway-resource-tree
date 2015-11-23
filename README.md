@@ -64,16 +64,12 @@ Recursively nestable tree structure definition for your API Gateway structure.
 
 ####  `Ref` and `Fn::GetAtt` 
 
-`Fn::GetAtt` provides a key-value pair set for the ResourceId's of each path. There are two namespaces, the relative paths of the resources this object created, and those prefixed with `Absolute::`, which returns the absolute resource path on the `RestApi` object.
+`Fn::GetAtt` provides a key-value pair set for the ResourceId's of each path. These operate relative to the trees.
 
 ```
 // This will return the `ResourceId` for the resource at relative path `/foo/{id}/bar`.
 // The root is defined as the `ParentResourceId`'s Path on the `RestApi` object.
 {"Fn::GetAtt": "/foo/{id}/bar"}
-// Now, example with `Absolute::` and a `ParentResource` at `/parent/resource`.
-{"Fn::GetAtt": "Absolute::/parent/resource/foo/{id}/bar"}
-// This will return the `ResourceId` for the resource relative to the API root,
-//   which is the `ResourceId` at `<APIROOT>/parent/resource/foo/{id}/bar`.
 ```
 
 

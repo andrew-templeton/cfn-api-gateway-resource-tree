@@ -32,10 +32,6 @@ function Upsert(cleanable, makeable, reply) {
             return reply(makeTreeErr.message);
           }
           console.log('Made tree, now building GetAtt hash: %j', makeTreeSuccess);
-          Object.keys(idHash).forEach(function(relativePath) {
-            idHash[('Absolute::' + cleanedPath +
-              relativePath).replace('//', '/')] = idHash[relativePath];
-          });
           console.log('Returning hash of GetAtt: %j', idHash);
           reply(null, getPhysicalId(makeable), idHash);
         });
@@ -69,12 +65,21 @@ function Upsert(cleanable, makeable, reply) {
     });
   }
 
-  function makeResource(parentId, pathPart, callback) {
+  function makeResource(parentId, pathPart, callback, delay) {
     APIG.createResource({
       restApiId: makeable.RestApiId,
       parentId: parentId,
       pathPart: pathPart
-    }, callback);
+    }, function(err, data) {
+      var retryDelay = delay || 250;
+      if (err && err.statusCode === 429) {
+        console.log('Getting throttled! Delaying by %s', retryDelay);
+        return setTimeout(function() {
+          makeResource(parentId, pathPart, callback, retryDelay * 2);
+        }, retryDelay);
+      }
+      callback(err, data);
+    });
   }
 }
 
