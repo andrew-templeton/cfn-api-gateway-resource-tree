@@ -10,6 +10,7 @@ exports.handler = CfnLambda({
   Create: Create,
   Update: Update,
   Delete: Delete,
+  NoUpdate: NoUpdate,
   SchemaPath: [__dirname, 'schema.json']
 });
 
@@ -121,41 +122,65 @@ function getPhysicalId(params) {
   ].join('---');
 }
 
-function cleanParent(restApiId, parentResourceId, callback) {
+function collectResources(restApiId, callback) {
 
   var pageSize = 500;
   var resources = [];
-  collectResources();
 
-  function collectResources(position) {
-    console.log('Collecting resources on the API...');
+  console.log('Collecting resources on API: %s', restApiId);
+  getResourcePage();
+
+  function getResourcePage(position) {
+    console.log('Collecting resource page of up to %s ' +
+      'resources at position %s on API %s...',
+      pageSize, position || '(first page)', restApiId);
     APIG.getResources({
       restApiId: restApiId,
       limit: pageSize,
       position: position
-    }, function(err, data) {
+    }, function(err, resourcePage) {
       if (err) {
-        console.error('Error while cleaning parent resource: %j', err);
+        console.error('Error while collecting resources: %j', err);
         return callback(err);
       }
-      resources = resources.concat(data.items);
+      resources = resources.concat(resourcePage.items);
       // Might need to recurse...
-      if (data.items.length === pageSize) {
+      if (resourcePage.items.length === pageSize) {
         console.log('Found more than one page of %s for resources.', pageSize);
-        return collectResources(position);
+        return getResourcePage(position);
       }
-      continueWithCleanse();
+      callback(null, resources);
     });
   }
+}
 
-  function continueWithCleanse() {
+function findById(resources, id) {
+  return resources.filter(function(resource) {
+    return resource.id === id;
+  })[0];
+}
+
+function cleanParent(restApiId, parentResourceId, callback) {
+  console.log('Triggering API resource collection to help clean: %s', restApiId);
+  collectResources(restApiId, function (collectErr, resources) {
+    if (collectErr) {
+      console.error('Could not clean parent due to ' +
+        'fatal resource collection error: %j', collectErr);
+      return callback(collectErr);
+    }
     console.log('Found batch of Resource objects: %j', resources);
-    var parentPath = resources.filter(function(resource) {
-      return resource.id === parentResourceId;
-    })[0].path;
+    var parent = findById(resources, parentResourceId);
+    if (!parent) {
+      console.error('Could not find the ParentId %s ' +
+        'in resource set when trying to cleanse, set: %j', parentResourceId, resources);
+      return callback({
+        message:'Could not find the ParentId ' + parentResourceId +
+          ' in resource set when trying to cleanse.'
+      });
+    }
     var immediateChildResources = resources.filter(function(resource) {
-      return resource.path !== '/' && resource.path.indexOf(parentPath) === 0 &&
-        parentPath.replace(/^\//, '').split('/').length + 1 ===
+      return resource.path !== '/' && resource.path.indexOf(parent.path) === 0 &&
+        parent.path.replace(/^\//, '').split('/').length + 1 ===
           resource.path.split('/').length;
     });
     console.log('Found batch of immediate child Resource ' +
@@ -167,10 +192,69 @@ function cleanParent(restApiId, parentResourceId, callback) {
         console.error('Error when deleting child resource set: %j', deleteAllErr);
         return callback(deleteAllErr);
       }
-      console.log('Cleaned parent resource: %s', parentPath);
-      callback(null, parentPath);
+      console.log('Cleaned parent resource: %s', parent.path);
+      callback(null, parent.path);
     });
+  });
+}
+
+function computeResourcePaths(node) {
+  return flatten(layer('')(node));
+  function flatten(list) {
+    return [].concat.apply([], list.map(function(item) {
+      return Array.isArray(item)
+        ? [].concat.apply([], item.map(flatten))
+        : item;
+    }));
   }
+  function layer(prefix) {
+    return function(node) {
+      console.log(node, node.ChildResources);
+      var chunk = node.PathPart
+        ? prefix + '/' + node.PathPart
+        : '';
+      return [
+        chunk || '/',
+        (node.ChildResources || []).map(layer(chunk))
+      ];
+    };
+  }
+}
+
+function NoUpdate(physicalId, params, reply) {
+  collectResources(params.RestApiId, function(collectErr, resources) {
+    if (collectErr) {
+      console.error('Error while collecting resources for API %s while ' +
+        ' trying to build GetAtt hash: %j', params.RestApiId, collectErr);
+      return reply('Error while collecting resources for API ' +  + ' while ' +
+        ' trying to build GetAtt hash: %j', params.RestApiId);
+    }
+    var parent = findById(resources, params.ParentId);
+    if (!parent) {
+      console.error('Could not find the ParentId %s ' +
+        'in resource set when trying to cleanse, set: %j', params.ParentId, resources);
+      return reply('Could not find the ParentId ' + params.ParentId +
+        ' in resource set for API ' + params.RestApiId +
+        ' when trying to obtain GetAtt hash.');
+    }
+    console.log('Found parent: %j', parent);
+    var resourceIndex = resources.reduce(function(hash, resource) {
+      hash[resource.path] = resource;
+      return hash;
+    }, {});
+    console.log('Completed resouce hash: %j', resourceIndex);
+    var relevantResourcesSet = computeResourcePaths(params);
+    console.log('Resource set for this tree: %j', relevantResourcesSet);
+    var relevantResourcesHash = relevantResourcesSet.reduce(function(hash, path) {
+      var fullPath = (parent.path + path).replace('//', '/');
+      if (resourceIndex[fullPath]) {
+        hash[path] = resourceIndex[fullPath].id;
+      }
+      return hash;
+    }, {});
+    console.log('Replying with hash: %j', relevantResourcesHash);
+    reply(null, physicalId, relevantResourcesHash);
+  });
 }
 
 function deleteResource(restApiId, resourceId, callback) {

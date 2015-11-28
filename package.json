@@ -1,6 +1,6 @@
 {
   "name": "cfn-api-gateway-resource-tree",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "AWS CloudFormation Custom Lambda Resource | API Gateway Resource",
   "main": "index.js",
   "scripts": {
@@ -32,6 +32,6 @@
   },
   "homepage": "https://github.com/andrew-templeton/cfn-api-gateway-resource-tree#readme",
   "dependencies": {
-    "cfn-lambda": "0.7.0"
+    "cfn-lambda": "0.8.0"
   }
 }
